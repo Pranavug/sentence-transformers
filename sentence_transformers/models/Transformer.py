@@ -18,15 +18,16 @@ class Transformer(nn.Module):
     """
     def __init__(self, model_name_or_path: str, max_seq_length: Optional[int] = None,
                  model_args: Dict = {}, cache_dir: Optional[str] = None,
-                 tokenizer_args: Dict = {}, do_lower_case: bool = False):
+                 tokenizer_args: Dict = {}, do_lower_case: bool = False, num_layers: int = 12):
         super(Transformer, self).__init__()
         self.config_keys = ['max_seq_length', 'do_lower_case']
         self.max_seq_length = max_seq_length
         self.do_lower_case = do_lower_case
+        self.num_layers = num_layers
 
-        config = AutoConfig.from_pretrained(model_name_or_path, **model_args, cache_dir=cache_dir)
+        config = AutoConfig.from_pretrained(model_name_or_path, **model_args, cache_dir=cache_dir, output_hidden_states=True)
         self.auto_model = AutoModel.from_pretrained(model_name_or_path, config=config, cache_dir=cache_dir)
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, cache_dir=cache_dir, **tokenizer_args)
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, cache_dir=cache_dir, padding_side='right', model_max_length=50, pad_to_max_length=True, **tokenizer_args)
 
 
     def forward(self, features):
@@ -36,9 +37,11 @@ class Transformer(nn.Module):
             trans_features['token_type_ids'] = features['token_type_ids']
 
         output_states = self.auto_model(**trans_features, return_dict=False)
-        output_tokens = output_states[0]
+        output_tokens = output_states[2]
+        output_tokens = output_tokens[self.num_layers]
+        # print(output_tokens.shape, self.num_layers)
 
-        cls_tokens = output_tokens[:, 0, :]  # CLS token is first token
+        cls_tokens = output_tokens[:, 0]  # CLS token is first token
         features.update({'token_embeddings': output_tokens, 'cls_token_embeddings': cls_tokens, 'attention_mask': features['attention_mask']})
 
         if self.auto_model.config.output_hidden_states:
@@ -84,7 +87,7 @@ class Transformer(nn.Module):
             to_tokenize = [[s.lower() for s in col] for col in to_tokenize]
 
 
-        output.update(self.tokenizer(*to_tokenize, padding=True, truncation='longest_first', return_tensors="pt", max_length=self.max_seq_length))
+        output.update(self.tokenizer(*to_tokenize, return_tensors="pt", max_length=50, pad_to_max_length=True, truncation=True))
         return output
 
 

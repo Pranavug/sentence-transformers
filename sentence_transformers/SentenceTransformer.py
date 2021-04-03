@@ -349,7 +349,7 @@ class SentenceTransformer(nn.Sequential):
             sent_embedding_dim_method = getattr(mod, "get_sentence_embedding_dimension", None)
             if callable(sent_embedding_dim_method):
                 return sent_embedding_dim_method()
-        return None
+        return 768
 
     def _first_module(self):
         """Returns the first module of this sequential embedder"""
@@ -439,7 +439,7 @@ class SentenceTransformer(nn.Sequential):
             scheduler: str = 'WarmupLinear',
             warmup_steps: int = 10000,
             optimizer_class: Type[Optimizer] = transformers.AdamW,
-            optimizer_params : Dict[str, object]= {'lr': 2e-5},
+            optimizer_params : Dict[str, object]= {'lr': 3e-5},
             weight_decay: float = 0.01,
             evaluation_steps: int = 0,
             output_path: str = None,
@@ -527,6 +527,7 @@ class SentenceTransformer(nn.Sequential):
 
         skip_scheduler = False
         for epoch in trange(epochs, desc="Epoch", disable=not show_progress_bar):
+            torch.cuda.empty_cache()
             training_steps = 0
 
             for loss_model in loss_models:

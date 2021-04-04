@@ -33,7 +33,7 @@ class BatchSemiHardTripletLoss(nn.Module):
        train_dataloader = DataLoader(train_dataset, shuffle=True, batch_size=train_batch_size)
        train_loss = losses.BatchSemiHardTripletLoss(model=model)
     """
-    def __init__(self, model: SentenceTransformer, distance_metric = BatchHardTripletLossDistanceFunction.cosine_distance, margin: float = 1):
+    def __init__(self, model: SentenceTransformer, distance_metric = BatchHardTripletLossDistanceFunction.eucledian_distance, margin: float = 1):
         super(BatchSemiHardTripletLoss, self).__init__()
         self.sentence_embedder = model
         self.margin = margin

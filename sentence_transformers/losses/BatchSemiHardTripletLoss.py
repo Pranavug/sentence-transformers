@@ -58,8 +58,8 @@ class BatchSemiHardTripletLoss(nn.Module):
             softmax_loss = self.forward_softmax(sentence_features, labels)
             rep = self.sentence_embedder(sentence_features[0])['sentence_embedding']
 
-            combined_loss = self.batch_semi_hard_triplet_loss(labels, rep) * 0.7 \
-                + softmax_loss * 0.3
+            combined_loss = self.batch_semi_hard_triplet_loss(labels, rep) * 1 \
+                + softmax_loss * 0
             return combined_loss
 
     def forward_softmax(self, sentence_features: Iterable[Dict[str, Tensor]], labels: Tensor):

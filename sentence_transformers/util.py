@@ -288,7 +288,8 @@ def import_from_string(dotted_path):
         module_path, class_name = dotted_path.rsplit('.', 1)
     except ValueError:
         msg = "%s doesn't look like a module path" % dotted_path
-        raise ImportError(msg)
+        # raise ImportError(msg)
+        class_name = dotted_path
 
     try:
         module = importlib.import_module(dotted_path)

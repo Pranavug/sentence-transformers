@@ -19,7 +19,8 @@ import os
 import gzip
 import csv
 import argparse
-from cnn_pools import CNNSmall, CNNLarge
+from CNNLarge import CNNLarge
+from CNNSmall import CNNSmall
 
 #### Just some code to print debug information to stdout
 logging.basicConfig(format='%(asctime)s - %(message)s',
@@ -153,7 +154,7 @@ with gzip.open(sts_dataset_path, 'rt', encoding='utf8') as fIn:
             score = float(row['score']) / 5.0 #Normalize score to range 0 ... 1
             test_samples.append(InputExample(texts=[row['sentence1'], row['sentence2']], label=score))
 
-# model = SentenceTransformer(model_save_path)
+model = SentenceTransformer(model_save_path)
 test_evaluator = EmbeddingSimilarityEvaluator.from_input_examples(test_samples, batch_size=train_batch_size, name='sts-test')
 test_evaluator(model, output_path=model_save_path)
 

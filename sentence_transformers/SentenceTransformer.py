@@ -587,7 +587,7 @@ class SentenceTransformer(nn.Sequential):
 
             self._eval_during_training(evaluator, output_path, save_best_model, epoch, -1, callback)
 
-        if evaluator is None and output_path is not None:   #No evaluator, but output path: save final model version
+        if output_path is not None:   #No evaluator, but output path: save final model version
             self.save(output_path)
 
     def evaluate(self, evaluator: SentenceEvaluator, output_path: str = None):

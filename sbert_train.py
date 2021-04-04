@@ -99,14 +99,12 @@ with gzip.open(nli_dataset_path, 'rt', encoding='utf8') as fIn:
 
 
 train_dataloader = DataLoader(train_samples, shuffle=True, batch_size=train_batch_size)
-softmax_train_dataloader = DataLoader(train_samples, shuffle=True, batch_size=train_batch_size)
 
 acc_dataloader = DataLoader(acc_samples, shuffle=True, batch_size=train_batch_size)
 
 print("sent embed:", model.get_sentence_embedding_dimension())
 
 train_loss = losses.BatchSemiHardTripletLoss(model=model)
-softmax_loss = losses.SoftmaxLoss(model=model, sentence_embedding_dimension=model.get_sentence_embedding_dimension(), num_labels=len(label2int))
 
 
 #Read STSbenchmark dataset and use it as development set
@@ -120,7 +118,7 @@ with gzip.open(sts_dataset_path, 'rt', encoding='utf8') as fIn:
             dev_samples.append(InputExample(texts=[row['sentence1'], row['sentence2']], label=score))
 
 dev_evaluator = EmbeddingSimilarityEvaluator.from_input_examples(dev_samples, batch_size=train_batch_size, name='sts-dev')
-acc_evaluator = LabelAccuracyEvaluator(dataloader=acc_dataloader, softmax_model=softmax_loss)
+acc_evaluator = LabelAccuracyEvaluator(dataloader=acc_dataloader, softmax_model=train_loss)
 
 # Configure the training
 num_epochs = args.epoch_num
@@ -131,7 +129,7 @@ logging.info("Warmup-steps: {}".format(warmup_steps))
 
 
 # Train the model
-model.fit(train_objectives=[(train_dataloader, train_loss), (softmax_train_dataloader, softmax_loss)],
+model.fit(train_objectives=[(train_dataloader, train_loss)],
           evaluator=acc_evaluator,
           epochs=num_epochs,
           evaluation_steps=args.log_interval,
@@ -155,7 +153,7 @@ with gzip.open(sts_dataset_path, 'rt', encoding='utf8') as fIn:
             score = float(row['score']) / 5.0 #Normalize score to range 0 ... 1
             test_samples.append(InputExample(texts=[row['sentence1'], row['sentence2']], label=score))
 
-model = SentenceTransformer(model_save_path)
+# model = SentenceTransformer(model_save_path)
 test_evaluator = EmbeddingSimilarityEvaluator.from_input_examples(test_samples, batch_size=train_batch_size, name='sts-test')
 test_evaluator(model, output_path=model_save_path)
 

@@ -38,11 +38,55 @@ class BatchSemiHardTripletLoss(nn.Module):
         self.sentence_embedder = model
         self.margin = margin
         self.distance_metric = distance_metric
+        self.concatenation_sent_rep = True
+        self.concatenation_sent_difference = True
+        self.concatenation_sent_multiplication = False
+
+        num_vectors_concatenated = 0
+        if self.concatenation_sent_rep:
+            num_vectors_concatenated += 2
+        if self.concatenation_sent_difference:
+            num_vectors_concatenated += 1
+        if self.concatenation_sent_multiplication:
+            num_vectors_concatenated += 1
+        self.classifier = nn.Linear(num_vectors_concatenated * 768, 3)
 
     def forward(self, sentence_features: Iterable[Dict[str, Tensor]], labels: Tensor):
-        rep = self.sentence_embedder(sentence_features[0])['sentence_embedding']
-        return self.batch_semi_hard_triplet_loss(labels, rep)
+        if labels is None:
+            return self.forward_softmax(sentence_features, labels)
+        else:
+            softmax_loss = self.forward_softmax(sentence_features, labels)
+            rep = self.sentence_embedder(sentence_features[0])['sentence_embedding']
 
+            combined_loss = self.batch_semi_hard_triplet_loss(labels, rep) * 0.7 \
+                + softmax_loss * 0.3
+            return combined_loss
+
+    def forward_softmax(self, sentence_features: Iterable[Dict[str, Tensor]], labels: Tensor):
+        reps = [self.sentence_embedder(sentence_feature)['sentence_embedding'] for sentence_feature in sentence_features]
+        rep_a, rep_b = reps
+
+        vectors_concat = []
+        if self.concatenation_sent_rep:
+            vectors_concat.append(rep_a)
+            vectors_concat.append(rep_b)
+
+        if self.concatenation_sent_difference:
+            vectors_concat.append(torch.abs(rep_a - rep_b))
+
+        if self.concatenation_sent_multiplication:
+            vectors_concat.append(rep_a * rep_b)
+
+        features = torch.cat(vectors_concat, 1)
+
+        output = self.classifier(features)
+        loss_fct = nn.CrossEntropyLoss()
+
+        if labels is not None:
+            loss = loss_fct(output, labels.view(-1))
+            return loss
+        else:
+            return reps, output
 
     # Semi-Hard Triplet Loss
     # Based on: https://github.com/tensorflow/addons/blob/master/tensorflow_addons/losses/triplet.py#L71

@@ -105,7 +105,8 @@ acc_dataloader = DataLoader(acc_samples, shuffle=True, batch_size=train_batch_si
 
 print("sent embed:", model.get_sentence_embedding_dimension())
 
-train_loss = losses.BatchSemiHardTripletLoss(model=model)
+# train_loss = losses.BatchSemiHardTripletLoss(model=model)
+train_loss = losses.SoftmaxLoss(model=model, sentence_embedding_dimension=model.get_sentence_embedding_dimension(), num_labels=len(label2int))
 
 
 #Read STSbenchmark dataset and use it as development set
@@ -131,7 +132,7 @@ logging.info("Warmup-steps: {}".format(warmup_steps))
 
 # Train the model
 model.fit(train_objectives=[(train_dataloader, train_loss)],
-          evaluator=dev_evaluator,
+          evaluator=acc_evaluator,
           epochs=num_epochs,
           evaluation_steps=args.log_interval,
           warmup_steps=warmup_steps,

@@ -21,8 +21,10 @@ class CNNLarge(nn.Module):
         self.conv4 = torch.nn.Conv2d(128, 1, kernel_size = (3, 1), stride = 1, padding = (1, 0))
         self.pool4 = torch.nn.MaxPool2d(kernel_size = (4, 1), stride = (2, 1), padding = 0)
 
-    def forward(self, x):
-        print("CNN-large forward")
+    def forward(self, inp):
+        x = inp['token_embeddings']
+        x = x.unsqueeze(1)
+
         x = F.relu(self.conv1(x))
         x = self.pool1(x)
 
@@ -34,7 +36,12 @@ class CNNLarge(nn.Module):
 
         x = F.relu(self.conv4(x))
         x = self.pool4(x)
-        return x
+
+        x = x.squeeze()
+        # x = self.pool4(x)
+
+        inp.update({'sentence_embedding': x})
+        return inp
 
     def save(self, output_path: str):
         torch.save(self.state_dict(), os.path.join(output_path, 'pytorch_model.bin'))
